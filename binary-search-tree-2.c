@@ -115,7 +115,7 @@ void recursiveInorder(Node* ptr){
 
     if(ptr){
         recursiveInorder(ptr->left);
-        printf(" [%d] ", ptr->key);
+        printf("%d ", ptr->key);
         recursiveInorder(ptr->right);
     }
 	 
@@ -149,7 +149,7 @@ void levelOrder(Node *ptr){ // lever order traversal
 		ptr = deQueue();
 
 		if(ptr){
-			printf(" [%d] ", ptr->key);
+			printf("%d ", ptr->key);
 
 			if(ptr->left)
 				enQueue(ptr->left);
@@ -166,32 +166,33 @@ int insert(Node* head, int key){
     Node* newNode = (Node*)malloc(sizeof(Node));
     newNode->key = key;
     newNode->left = NULL;
-    newNode->right = NULL;
+    newNode->right = NULL; //삽입 노드 할당 및 초기화
 
     if (head->left == NULL)
     {   
         head->left = newNode;
-        return 1; // 공백 BST의 경우
+        return 1; // 공백 BST의 경우, root 자리에 바로 삽입
     }
     
     Node* ptr = head->left;
-    Node* parentNode = NULL;
+    Node* parentNode = NULL; // 공백이 아닌 경우, 삽입 위치 찾을 ptr과 그 부모를 기록할 노드 포인터
+
     while(ptr != NULL){
 
-        if(ptr->key == key) return 1;
+        if(ptr->key == key) return 1; // 이미 key를 가진 노드가 존재, 종료한다.
 
-        parentNode = ptr;
+        parentNode = ptr; // 부모 기록
 
-        if(ptr->key < key)
-            ptr = ptr->right;
-        else
-            ptr = ptr->left;
+        if(ptr->key < key) // 찾는 key값과 비교하여
+            ptr = ptr->right; 
+        else  				// 왼쪽, 오른쪽 탐색방향 결정
+            ptr = ptr->left; 
     }
 
-    if(parentNode->key > key)
-        parentNode->left = newNode;
+    if(parentNode->key > key) // 삽입할 부모 노드의 key와 비교
+        parentNode->left = newNode; // 부모의 key가 크면, 왼쪽 자식
     else
-        parentNode->right = newNode;
+        parentNode->right = newNode; // 삽입할 노드 key가 크면 오른쪽 자식으로 삽입
 
     return 1;
 }
@@ -202,11 +203,12 @@ int deleteNode(Node* head, int key){
 		return -1;
 	}
 
-	Node* ptr = head->left; // 루트노드부터 탐색
+	Node* root = head->left;
+
+	Node* ptr = root; // 루트노드부터 탐색
 	Node* parent = NULL; // ptr의 부모 노드 기록
 
 	while((ptr != NULL)&&(ptr->key!=key)){
-
 		if(ptr->key != key){
 
 			parent = ptr; // 부모 노드 기록
@@ -216,26 +218,30 @@ int deleteNode(Node* head, int key){
 			else
 				ptr = ptr->right;
 		}
-
-	} // key를 가진 노드까지 이동
+	} // key를 가진 노드(삭제 대상)까지 이동
 
 	if(ptr == NULL){
-		printf("No node for key [%d]\n ", key);
+		printf("No node for key %d\n ", key);
 		return -1;
 	} // key를 가진 노드 X
 
-	if(ptr->left == NULL && ptr->right == NULL) { // leaf노드의 경우
+	if(ptr->left == NULL && ptr->right == NULL) { // 1. leaf노드의 경우
 
-		if(parent->left == ptr) // 삭제하려는 노드가 부모의 왼쪽 자식인 경우
-			parent->left == NULL;
-		else
-			parent->right == NULL; // 오른쪽 자식
+		if(parent != NULL) { // 부모 여부 검사
+			if(parent->left == ptr) // 삭제하려는 노드가 부모의 왼쪽 자식인 경우
+				parent->left == NULL;
+			else
+				parent->right == NULL; // 오른쪽 자식
+		} else {
+			head->left = NULL; // root를 지우는 경우
+		}
 
 		free(ptr); // 할당 해제
 		return 1;
 	}
 
-	if(ptr->left ==NULL || ptr->right == NULL){ // 자식 노드가 1개인 경우
+	if(ptr->left ==NULL || ptr->right == NULL){ // 2. 자식 노드가 1개인 경우
+
 		Node* child;
 		if (ptr->left != NULL)
 			child = ptr->left; // 왼쪽 자식을 가진 경우 기록
@@ -248,16 +254,15 @@ int deleteNode(Node* head, int key){
 				parent->left = child;
 			else
 				parent->right = child;
-		}
-		else{ // root 노드를 지운 경우
-			head->left = child; // 루트 교체
+		}else{ // root 노드를 지운 경우
+			root = child; // 루트 교체
 		}
 
 		free(ptr); // 할당 해제
 		return 1;
 	}
 	
-	//이하는 자식이 2개인 노드를 삭제하는 경우
+	// 3. 자식이 2개인 노드의 경우
 	Node* candidate; //좌측 서브트리에서 최대값 찾기
 	parent = ptr;
 
@@ -266,18 +271,28 @@ int deleteNode(Node* head, int key){
 	while (candidate->right != NULL)
 	{	
 		parent = candidate;
-		candidate = candidate->right;
+		candidate = candidate->right; // 좌측 서브트리의 최대값까지 이동
 	}
 	
+	if(parent->left == candidate) 
+		parent->left = candidate->left; 
+	else
+		parent->right = candidate->left; // 지워질 노드의 왼쪽 자식 링크 보존
+
 	ptr->key = candidate->key; // 삭제될 노드의 key를 좌측 서브트리의 최댓값으로 대체
 
 	free(candidate);
 	return 1;
 }
 
-int freeNode(){
+void freeNode(Node* ptr){
+	
+	if(ptr){
+		freeNode(ptr->left);
+		freeNode(ptr->right);
+		free(ptr);
+	}
 
-	return 1;
 }
 
 int freeBST(Node* head){
@@ -311,11 +326,8 @@ void printStack(){
 
 Node* pop(){
 
-	Node* temp = stack[top]; 
-	stack[top] = NULL;
-	top--;
-
-	return temp;
+	if( top < 0 ) return NULL;
+	return stack[top--];
 }
 
 void push(Node* aNode){
@@ -327,8 +339,8 @@ void push(Node* aNode){
 Node* deQueue(){
 
 	if(front == rear){
-		printf("queue is full\n");
-		return;
+		
+		return NULL;
 	}
 
 	front = (front+1) % MAX_QUEUE_SIZE;
